@@ -452,7 +452,7 @@ echo "=========================================="
 kubectl get profiles
 echo ""
 echo "Installation complete!"
-echo "Access Kubeflow with: kubectl port-forward svc/istio-ingressgateway -n istio-system 8080:80"
+echo "Access Kubeflow with: kubectl port-forward svc/istio-ingressgateway -n istio-system 8080:80 --address=0.0.0.0 &"
 echo "Then visit: http://localhost:8080"
 echo "Default credentials: user@example.com / 12341234"
 EOF
@@ -465,7 +465,7 @@ chmod +x check-all.sh
 
 ```bash
 # Port forward in one terminal
-kubectl port-forward svc/istio-ingressgateway -n istio-system 8080:80
+kubectl port-forward svc/istio-ingressgateway -n istio-system 8080:80 --address=0.0.0.0 &
 
 # Access at: http://localhost:8080
 # Email: user@example.com
