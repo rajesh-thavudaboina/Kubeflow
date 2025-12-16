@@ -9,6 +9,20 @@
 - **OS**: Linux (Ubuntu 20.04+) or macOS
 
 ## Step 1: Install Required Tools
+Before starting, ensure you have the following installed on your system:
+
+1. **Docker** → Required for Kind to run containers as cluster nodes.
+
+   ```bash
+   sudo apt-get update
+   sudo apt install docker.io -y
+   sudo usermod -aG docker $USER && newgrp docker
+   docker --version
+
+   docker ps
+   ```
+
+2. **Kind (Kubernetes in Docker)** → To create the cluster.
 
   ```bash
   [ $(uname -m) = x86_64 ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.30.0/kind-linux-amd64
