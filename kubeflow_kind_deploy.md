@@ -147,7 +147,7 @@ git branch
 # Should show: * (HEAD detached at v1.10.0)
 ```
 
-# To get all pods except namespace kube-system as it consists of kubernetes pods
+To get all pods except namespace kube-system as it consists of kubernetes pods
 ```bash
   kubectl get pods -A --field-selector metadata.namespace!=kube-system
 ```
