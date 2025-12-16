@@ -85,9 +85,10 @@ echo 'fs.inotify.max_user_watches=1255360' | sudo tee -a /etc/sysctl.conf
 
 ## Step 3: Create Kind Cluster
 
-Create `kind-kubeflow.yaml`:
+# Create kind-kubeflow.yaml:
 
 ```yaml
+cat <<EOF > kind-kubeflow.yaml
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 name: kubeflow
@@ -111,11 +112,12 @@ nodes:
   image: kindest/node:v1.33.1
 - role: worker
   image: kindest/node:v1.33.1
+EOF
 ```
 
 ```bash
 # Create cluster
-kind create cluster --config kind-kubeflow.yaml --wait 5m
+kind create cluster --config kind-kubeflow.yaml
 
 # Verify
 kubectl cluster-info
@@ -523,7 +525,7 @@ for component in "${components[@]}"; do
     if [[ $component == *"kserve/kserve"* ]] || [[ $component == *"training-operator"* ]]; then
         kustomize build "$component" | kubectl apply --server-side --force-conflicts -f -
     else
-        kustomize build "$component" | kubectl apply -k -
+        kustomize build "$component" | kubectl apply -f -
     fi
     
     sleep 10
@@ -540,7 +542,10 @@ echo "=========================================="
 echo "Waiting for all pods to be ready (this may take 10-15 minutes)..."
 echo "Run './check-all.sh' to verify installation"
 ```
-
+```bash
+  chmod +x install-kubeflow-v1.10.sh
+  ./install-kubeflow-v1.10.sh
+```
 ## Troubleshooting
 
 ### Issue 1: CRD Not Established
