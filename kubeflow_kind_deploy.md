@@ -590,7 +590,7 @@ kind delete cluster --name kubeflow
 
 1. **Create a notebook**:
 ```bash
-kubectl apply -f test-notebook.yaml -n kubeflow-user-example-com
+kubectl apply -f my-notebook.yaml -n kubeflow-user-example-com
 ```
 
 2. **Run a pipeline**: Access Pipeline UI at http://localhost:8080/pipeline or http://<EC2 PublicIP>:8080
@@ -638,11 +638,11 @@ kubectl rollout restart deployment jupyter-web-app-deployment -n kubeflow
 Kubeflow UI stack:
 
 Browser
-  ↓ cookies
+  --> cookies
 Istio Gateway
-  ↓ headers
+  --> headers
 Kubeflow Central Dashboard
-  ↓ auth
+  --> auth
 Jupyter Web App
 
 
