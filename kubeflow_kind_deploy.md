@@ -152,6 +152,20 @@ To get all pods except namespace kube-system as it consists of kubernetes pods
 kubectl get pods -A --field-selector metadata.namespace!=kube-system
 ```
 
+## Solution 1: Use the Single Command Installation (Recommended)
+The official v1.10.0 documentation recommends using the single-command installation which handles retries:
+bashcd ~/manifests
+
+## This command automatically retries until successful
+```bash
+while ! kustomize build example | kubectl apply --server-side --force-conflicts -f -; do 
+    echo "Retrying to apply resources"; 
+    sleep 20; 
+done
+```
+This is the official recommended method from the v1.10.0 README and handles all dependencies correctly.
+
+## Solution 2 manually install all components
 ## Step 5: Install cert-manager
 
 ```bash
