@@ -632,6 +632,169 @@ kubectl apply -f my-notebook.yaml -n kubeflow-user-example-com
 
 Excellent! Your Kubeflow v1.10.0 installation is complete and all pods are running! 🎉
 
+
+## Issue 1: Minio - ErrImagePull
+Diagnose Minio Issue
+```bash
+# Get detailed error information
+kubectl describe pod -n kubeflow $(kubectl get pods -n kubeflow -l app=minio -o name)
+
+# Check the exact image being pulled
+kubectl get deployment minio -n kubeflow -o jsonpath='{.spec.template.spec.containers[0].image}' && echo
+
+# Check events
+kubectl get events -n kubeflow --sort-by='.lastTimestamp' | grep minio | tail -10
+```
+
+Fix Minio Image Pull
+
+```bash
+# Check what image is configured
+cd ~/manifests
+grep -r "minio" apps/pipeline/upstream/base/installs/multi-user/pipelines/minio/ 2>/dev/null | grep image || \
+find apps/pipeline/upstream/base -name "*minio*" -type f -exec grep -H "image:" {} \;
+
+# Most likely fix - update to working image
+kubectl set image deployment/minio -n kubeflow \
+  minio=gcr.io/ml-pipeline/minio:RELEASE.2019-08-14T20-37-41Z-license-compliance
+
+# OR try Docker Hub version
+kubectl set image deployment/minio -n kubeflow \
+  minio=minio/minio:RELEASE.2023-09-30T07-02-29Z
+```
+
+Issue 2: ml-pipeline - CrashLoopBackOff
+Diagnose ml-pipeline Issue
+```bash
+# Check logs from the crashed container
+kubectl logs -n kubeflow $(kubectl get pods -n kubeflow -l app=ml-pipeline -o name) -c ml-pipeline-api-server --tail=100
+
+# If that doesn't work, check previous crash
+kubectl logs -n kubeflow $(kubectl get pods -n kubeflow -l app=ml-pipeline -o name) -c ml-pipeline-api-server --previous
+
+# Describe the pod
+kubectl describe pod -n kubeflow $(kubectl get pods -n kubeflow -l app=ml-pipeline -o name)
+```
+The ml-pipeline is crashing because it depends on Minio. Once Minio is fixed, ml-pipeline should automatically recover.
+Complete Fix Script
+## Save this as fix-pipeline-errors.sh:
+```bash
+bash#!/bin/bash
+set -e
+
+echo "=== Fixing Kubeflow Pipelines Issues ==="
+echo ""
+
+# Step 1: Diagnose Minio
+echo "Step 1: Checking Minio error..."
+echo "Current Minio image:"
+kubectl get deployment minio -n kubeflow -o jsonpath='{.spec.template.spec.containers[0].image}'
+echo ""
+echo ""
+
+echo "Minio error details:"
+kubectl describe pod -n kubeflow -l app=minio | grep -A 20 "Events:"
+echo ""
+
+# Step 2: Fix Minio image
+echo "Step 2: Fixing Minio image..."
+echo "Trying GCR image first..."
+kubectl set image deployment/minio -n kubeflow \
+  minio=gcr.io/ml-pipeline/minio:RELEASE.2019-08-14T20-37-41Z-license-compliance
+
+echo "Waiting 30 seconds for image pull..."
+sleep 30
+
+# Check if it worked
+MINIO_STATUS=$(kubectl get pods -n kubeflow -l app=minio -o jsonpath='{.items[0].status.phase}')
+if [ "$MINIO_STATUS" != "Running" ]; then
+    echo "GCR image didn't work, trying Docker Hub..."
+    kubectl set image deployment/minio -n kubeflow \
+      minio=minio/minio:RELEASE.2023-09-30T07-02-29Z
+    sleep 30
+fi
+
+# Step 3: Check ml-pipeline logs
+echo ""
+echo "Step 3: Checking ml-pipeline crash reason..."
+kubectl logs -n kubeflow -l app=ml-pipeline -c ml-pipeline-api-server --tail=50 2>/dev/null || \
+kubectl logs -n kubeflow -l app=ml-pipeline -c ml-pipeline-api-server --previous --tail=50
+
+# Step 4: Wait for recovery
+echo ""
+echo "Step 4: Waiting for pods to recover..."
+echo "Waiting for Minio..."
+kubectl wait --for=condition=Ready pod -l app=minio -n kubeflow --timeout=300s || echo "Minio still not ready"
+
+echo ""
+echo "Waiting for ml-pipeline..."
+kubectl wait --for=condition=Ready pod -l app=ml-pipeline -n kubeflow --timeout=300s || echo "ml-pipeline still not ready"
+
+# Step 5: Final status
+echo ""
+echo "=== Final Status ==="
+kubectl get pods -n kubeflow | grep -E "minio|ml-pipeline"
+echo ""
+echo "If still having issues, check logs with:"
+echo "kubectl logs -n kubeflow -l app=minio"
+echo "kubectl logs -n kubeflow -l app=ml-pipeline -c ml-pipeline-api-server"
+```
+
+```bash
+chmod +x fix-pipeline-errors.sh
+./fix-pipeline-errors.sh
+Quick Manual Fix (Fastest)
+```
+```bash
+# 1. Fix Minio image
+kubectl set image deployment/minio -n kubeflow \
+  minio=gcr.io/ml-pipeline/minio:RELEASE.2019-08-14T20-37-41Z-license-compliance
+
+# 2. Watch the pods recover
+kubectl get pods -n kubeflow -l app=minio -w
+
+# Once Minio is Running, ml-pipeline should auto-recover
+# If not, restart it:
+kubectl rollout restart deployment/ml-pipeline -n kubeflow
+```
+Alternative: Check if it's a network issue
+
+```bash
+# Test if you can pull images from GCR
+docker pull gcr.io/ml-pipeline/minio:RELEASE.2019-08-14T20-37-41Z-license-compliance
+
+# If that fails, try Docker Hub
+docker pull minio/minio:RELEASE.2023-09-30T07-02-29Z
+
+# Check if Kind cluster can pull images
+kubectl run test-image --image=gcr.io/ml-pipeline/minio:RELEASE.2019-08-14T20-37-41Z-license-compliance \
+  --restart=Never -n kubeflow --command -- sleep 3600
+kubectl get pod test-image -n kubeflow
+kubectl delete pod test-image -n kubeflow
+```
+
+Expected Recovery Timeline
+Once you fix Minio:
+
+Minio pod: Should become Running in 1-2 minutes
+ml-pipeline pod: Should automatically recover in 2-3 minutes after Minio is Running
+
+Verify Success
+bash# Check both pods are running
+kubectl get pods -n kubeflow | grep -E "minio|ml-pipeline"
+
+Expected output:
+minio-xxxxxx-xxxxx                                   2/2     Running   0          Xm
+ml-pipeline-xxxxxx-xxxxx                             2/2     Running   0          Xm
+
+ Test if pipeline API is working
+kubectl port-forward -n kubeflow svc/ml-pipeline 8888:8888 &
+sleep 5
+curl http://localhost:8888/apis/v1beta1/healthz
+Should return: {"commit_sha":"..."}
+Run the diagnostic commands first to see the exact error, then apply the appropriate fix. The ml-pipeline crash is almost certainly due to Minio not being available!
+
+
 ## However, you're encountering a **CSRF token error** when trying to create a notebook. This is a common issue related to cookie/session handling. Let me help you fix this:
 
 ## Quick Fix for CSRF Error
