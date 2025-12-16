@@ -453,7 +453,7 @@ kubectl get profiles
 echo ""
 echo "Installation complete!"
 echo "Access Kubeflow with: kubectl port-forward svc/istio-ingressgateway -n istio-system 8080:80 --address=0.0.0.0 &"
-echo "Then visit: http://localhost:8080"
+echo "Then visit: http://localhost:8080" or "http://<EC2 PublicIP>:8080"
 echo "Default credentials: user@example.com / 12341234"
 EOF
 
@@ -467,7 +467,7 @@ chmod +x check-all.sh
 # Port forward in one terminal
 kubectl port-forward svc/istio-ingressgateway -n istio-system 8080:80 --address=0.0.0.0 &
 
-# Access at: http://localhost:8080
+# Access at: http://localhost:8080 or http://<EC2 PublicIP>:8080
 # Email: user@example.com
 # Password: 12341234
 ```
@@ -593,7 +593,7 @@ kind delete cluster --name kubeflow
 kubectl apply -f test-notebook.yaml -n kubeflow-user-example-com
 ```
 
-2. **Run a pipeline**: Access Pipeline UI at http://localhost:8080/pipeline
+2. **Run a pipeline**: Access Pipeline UI at http://localhost:8080/pipeline or http://<EC2 PublicIP>:8080
 
 3. **Train a model**: Use Training Operator
 
@@ -608,46 +608,30 @@ kubectl apply -f test-notebook.yaml -n kubeflow-user-example-com
 
 Excellent! Your Kubeflow v1.10.0 installation is complete and all pods are running! 🎉
 
-However, you're encountering a **CSRF token error** when trying to create a notebook. This is a common issue related to cookie/session handling. Let me help you fix this:
+## However, you're encountering a **CSRF token error** when trying to create a notebook. This is a common issue related to cookie/session handling. Let me help you fix this:
 
 ## Quick Fix for CSRF Error
 
-🥈 OPTION 2 (Quick Dev Fix): Disable CSRF Check (NOT for prod)
+🥈(Quick Dev Fix): Disable CSRF Check (NOT for prod)
 
 If this is only a demo / learning setup, you can disable the check.
 
 Patch jupyter-web-app deployment
+```bash
 kubectl edit deployment jupyter-web-app-deployment -n kubeflow
-
+```
 
 Add env var:
-
+```bash
 env:
 - name: APP_SECURE_COOKIES
   value: "false"
-
+```
 
 Restart:
-
+```bash
 kubectl rollout restart deployment jupyter-web-app-deployment -n kubeflow
-
-
-⚠️ Not recommended for production
-
-🥉 OPTION 3 (EASIEST): Continue using YAML (Already Working)
-
-Since this works perfectly:
-
-kubectl apply -f my-notebook.yaml
-
-
-You can:
-
-Ignore UI creation
-
-Use UI only to Connect to notebooks
-
-This is very common in real teams.
+```
 
 🔍 Why CSRF Happens Specifically Here
 
