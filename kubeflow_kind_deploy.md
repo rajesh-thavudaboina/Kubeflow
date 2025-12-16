@@ -85,7 +85,7 @@ echo 'fs.inotify.max_user_watches=1255360' | sudo tee -a /etc/sysctl.conf
 
 ## Step 3: Create Kind Cluster
 
-# Create kind-kubeflow.yaml:
+Create kind-kubeflow.yaml:
 
 ```yaml
 cat <<EOF > kind-kubeflow.yaml
@@ -149,7 +149,7 @@ git branch
 
 To get all pods except namespace kube-system as it consists of kubernetes pods
 ```bash
-  kubectl get pods -A --field-selector metadata.namespace!=kube-system
+kubectl get pods -A --field-selector metadata.namespace!=kube-system
 ```
 
 ## Step 5: Install cert-manager
