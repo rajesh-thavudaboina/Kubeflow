@@ -10,29 +10,51 @@
 
 ## Step 1: Install Required Tools
 
+  ```bash
+  [ $(uname -m) = x86_64 ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.30.0/kind-linux-amd64
+  chmod +x ./kind
+  sudo mv ./kind /usr/local/bin/kind
+  ```
+
+   ```bash
+   kind version
+   ```
+
+   [Install Guide](https://kind.sigs.k8s.io/docs/user/quick-start/#installation)
+
+3. **kubectl** → To interact with the cluster.
+  ```bash
+  curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+  sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+  chmod +x kubectl
+  mkdir -p ~/.local/bin
+  mv ./kubectl ~/.local/bin/kubectl
+  ```
+
+   ```bash
+   kubectl version --client
+   ```
+
+   [Install Guide](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
+
+4. **Helm (for Helm-based installation)**
+  ```bash
+  curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-4
+  chmod 700 get_helm.sh
+  ./get_helm.sh
+  ```
+
+   ```bash
+   helm version
+   ```
+
+   [Install Guide](https://helm.sh/docs/intro/install/)
+
+5. **Install Kustomize**
 ```bash
-# Update system
-sudo apt-get update && sudo apt-get upgrade -y
-
-# Install dependencies
-sudo apt-get install -y curl wget git jq
-
-# Install Kind v0.20.0
-curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-linux-amd64
-chmod +x ./kind
-sudo mv ./kind /usr/local/bin/kind
-kind version
-
-# Install kubectl v1.28.0
-curl -LO "https://dl.k8s.io/release/v1.28.0/bin/linux/amd64/kubectl"
-chmod +x kubectl
-sudo mv kubectl /usr/local/bin/
-kubectl version --client
-
-# Install kustomize v5.4.3
-curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
-sudo mv kustomize /usr/local/bin/
-kustomize version
+  curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+  sudo mv kustomize /usr/local/bin/
+  kustomize version
 ```
 
 ## Step 2: Configure System
