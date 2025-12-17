@@ -44,7 +44,7 @@ kind version
 
 ## kubectl
 ```bash
-   curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 chmod +x kubectl
 mkdir -p ~/.local/bin
@@ -108,7 +108,6 @@ helm install kuberay-operator kuberay/kuberay-operator -n ray-system
 kubectl get pods -n ray-system
 ```
 You should see the kuberay-operator-... pod in Running state.
-
 
 3. Deploy RayCluster with Dashboard + Metrics
 Create Ray namespace:
@@ -315,7 +314,7 @@ kubectl apply -f ray-podmonitor.yaml
 kubectl get podmonitors -n monitoring
 ```
 ## To Port forward
-``bash
+```bash
   kubectl port-forward svc/kps-grafana -n monitoring 3000:80 --address 0.0.0.0 &
 
   kubectl port-forward svc/raycluster-dashboard-head-svc -n ray 8265:8265 --address 0.0.0.0 &
