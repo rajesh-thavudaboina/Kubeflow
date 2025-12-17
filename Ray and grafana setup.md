@@ -23,38 +23,42 @@ On your **EC2 instance**:
 
 Install quickly:
 
+## Docker
 ```bash
-# Docker
 sudo apt-get update
 sudo apt install docker.io -y
 sudo usermod -aG docker $USER && newgrp docker
 docker --version
 
 docker ps
+```
+## re-login so docker group is active, then:
 
-
-# re-login so docker group is active, then:
-
-# kind
+## kind
+```bash
 [ $(uname -m) = x86_64 ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.30.0/kind-linux-amd64
 chmod +x ./kind
 sudo mv ./kind /usr/local/bin/kind
 kind version
+```
 
-# kubectl
+## kubectl
+```bash
    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 chmod +x kubectl
 mkdir -p ~/.local/bin
 mv ./kubectl ~/.local/bin/kubectl
+
 kubectl version --client
+```
 
-
-# helm
+## helm
+```bash
 curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-4
 chmod 700 get_helm.sh
 ./get_helm.sh
-
+```
 
 
 Note: Log out and back in after adding your user to the docker group.
@@ -62,11 +66,9 @@ Note: Log out and back in after adding your user to the docker group.
 Set a helper env var with your EC2 public IP:
 
 
-export EC2_PUBLIC_IP="YOUR_EC2_PUBLIC_IP_HERE"
+## export EC2_PUBLIC_IP="YOUR_EC2_PUBLIC_IP_HERE"
 1. Create KIND Cluster
-Create KIND config:
-
-
+```bash
 cat > kind-ray.yaml <<EOF
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
@@ -84,35 +86,38 @@ nodes:
   - role: worker
   - role: worker
 EOF
-
+```
 Create cluster:
-
+```bash
 kind create cluster --name ray-cluster --config kind-ray.yaml
+```
+```bash
 kubectl get nodes
-
+```
 
 2. Install KubeRay Operator
-
+```bash
 kubectl create namespace ray-system
 
 helm repo add kuberay https://ray-project.github.io/kuberay-helm/
 helm repo update
 
 helm install kuberay-operator kuberay/kuberay-operator -n ray-system
-
+```
+```bash
 kubectl get pods -n ray-system
-
+```
 You should see the kuberay-operator-... pod in Running state.
 
 
 3. Deploy RayCluster with Dashboard + Metrics
 Create Ray namespace:
-
+```bash
 kubectl create namespace ray
+```
 Create raycluster-dashboard.yaml:
 
-bash
-Copy code
+```bash
 cat > raycluster-dashboard.yaml <<EOF
 apiVersion: ray.io/v1
 kind: RayCluster
@@ -153,10 +158,13 @@ spec:
             - name: ray-worker
               image: rayproject/ray:2.9.3-py39
 EOF
-
+```
+```bash
 kubectl apply -f raycluster-dashboard.yaml
+```
+```bash
 kubectl get pods -n ray
-
+```
 You should see something like:
 
 raycluster-dashboard-head-xxxxx                 1/1   Running
@@ -164,6 +172,7 @@ raycluster-dashboard-small-group-worker-yyyyy   1/1   Running
 
 4. Expose Ray Dashboard via NodePort
 
+```bash
 cat > ray-dashboard-svc.yaml <<EOF
 apiVersion: v1
 kind: Service
@@ -180,16 +189,18 @@ spec:
       targetPort: 8265
       nodePort: 30000
 EOF
-
+```
+```bash
 kubectl apply -f ray-dashboard-svc.yaml
 kubectl get svc -n ray
+```
 Access Ray Dashboard in browser:
 
 
 http://$EC2_PUBLIC_IP:30000
 5. Install Prometheus + Grafana (kube-prometheus-stack)
-bash
-Copy code
+
+```bash
 kubectl create namespace monitoring
 
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
@@ -198,10 +209,11 @@ helm repo update
 helm install kps prometheus-community/kube-prometheus-stack -n monitoring
 
 kubectl get pods -n monitoring
+```
 Wait until all pods in monitoring are Running.
 
 6. Expose Grafana via NodePort
-
+```bash
 cat > grafana-nodeport.yaml <<EOF
 apiVersion: v1
 kind: Service
@@ -219,9 +231,11 @@ spec:
       targetPort: 3000
       nodePort: 30001
 EOF
-
+```
+```bash
 kubectl apply -f grafana-nodeport.yaml
 kubectl get svc -n monitoring | grep grafana
+```
 Grafana URL:
 
 
@@ -232,22 +246,25 @@ User: admin
 
 Password: from secret:
 
-
+```bash
 kubectl get secret kps-grafana -n monitoring -o jsonpath='{.data.admin-password}' | base64 -d; echo
+```
+
 7. Enable Grafana Embedding (for Ray iframes)
 Allow Grafana to be embedded and enable anonymous read-only access:
 
-
+```bash
 kubectl -n monitoring set env deployment/kps-grafana \
   GF_SECURITY_ALLOW_EMBEDDING=true \
   GF_AUTH_ANONYMOUS_ENABLED=true \
   GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
 
 kubectl rollout status deployment/kps-grafana -n monitoring
+```
 8. Expose Ray Metrics to Prometheus
 8.1 Service on Ray Head (ray-head-metrics)
-bash
-Copy code
+
+```bash
 cat > ray-head-metrics-svc.yaml <<EOF
 apiVersion: v1
 kind: Service
@@ -264,12 +281,14 @@ spec:
       port: 8080
       targetPort: 8080
 EOF
-
+```
+```bash
 kubectl apply -f ray-head-metrics-svc.yaml
 kubectl get svc -n ray
+```
+
 8.2 PodMonitor (Prometheus CRD)
-bash
-Copy code
+```bash
 cat > ray-podmonitor.yaml <<EOF
 apiVersion: monitoring.coreos.com/v1
 kind: PodMonitor
@@ -290,14 +309,30 @@ spec:
       path: /metrics
       interval: 15s
 EOF
-
+```
+```bash
 kubectl apply -f ray-podmonitor.yaml
 kubectl get podmonitors -n monitoring
+```
+## To Port forward
+``bash
+  kubectl port-forward svc/kps-grafana -n monitoring 3000:80 --address 0.0.0.0 &
+
+  kubectl port-forward svc/raycluster-dashboard-head-svc -n ray 8265:8265 --address 0.0.0.0 &
+
+  kubectl port-forward svc/istio-ingressgateway -n istio-system 8081:80 --address=0.0.0.0 &
+
+  kubectl port-forward -n monitoring svc/kps-kube-prometheus-stack-prometheus 9090:9090 --address 0.0.0.0 &
+
+  kubectl get pods -A --field-selector metadata.namespace!=kube-system
+
+```
 9. Verify Prometheus Has Ray Metrics
 We’ll port-forward Prometheus (internal only, no NodePort needed):
 
-
-kubectl port-forward -n monitoring svc/kps-kube-prometheus-stack-prometheus 9090:9090 --address 0.0.0.0
+```bash
+kubectl port-forward -n monitoring svc/kps-kube-prometheus-stack-prometheus 9090:9090 --address 0.0.0.0 &
+```
 Open in browser:
 
 
@@ -307,9 +342,11 @@ Go to Status → Targets, and verify a Ray target shows UP.
 In Graph tab, try:
 
 promql
-
+```bash
 ray_node_mem_total
+
 ray_node_cpu_utilization
+```
 You should see metrics with labels like:
 
 
@@ -322,9 +359,11 @@ Dashboards → New → New dashboard → Add new panel
 Query examples:
 
 promql
-
+```bash
 ray_node_cpu_utilization{pod=~"raycluster.*head.*"}
+
 ray_node_mem_total{pod=~"raycluster.*head.*"}
+```
 Choose Time series visualization.
 
 Save as e.g. Ray Test Dashboard.
@@ -335,6 +374,7 @@ If these work, your Prometheus ↔ Grafana ↔ Ray metrics are wired.
 Ray creates dashboard JSONs inside the head pod; we copy and import them.
 
 11.1 Copy dashboards from Ray head to EC2
+```bash
 
 HEAD_POD=$(kubectl get pod -n ray -l ray.io/node-type=head -o jsonpath='{.items[0].metadata.name}')
 
@@ -352,6 +392,8 @@ kubectl cp -n ray "$HEAD_POD":/tmp/ray-dashboards.tgz ~/ray-grafana-dashboards/r
 cd ~/ray-grafana-dashboards
 tar xzf ray-dashboards.tgz
 ls grafana/dashboards
+
+```
 You should see files like:
 
 
@@ -398,10 +440,11 @@ If you right-click a tile → Open in new tab, you should see the corresponding 
 13. Download Dashboard JSONs to Your Laptop
 From your laptop terminal (not EC2):
 
-
+```bash
 scp -i /path/to/your-key.pem \
   ubuntu@$EC2_PUBLIC_IP:~/ray-grafana-dashboards/grafana/dashboards/* \
   ./ray-dashboards/
+```
 This copies all Ray dashboard JSONs into ./ray-dashboards on your laptop.
 
 14. Troubleshooting Notes (Common Issues)
