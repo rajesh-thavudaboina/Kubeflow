@@ -1,4 +1,4 @@
-# Kubeflow v1.10.0 Complete Installation Guide
+# Kubeflow v1.10.2 Complete Installation Guide
 
 ## Prerequisites
 
@@ -139,12 +139,12 @@ cd ~
 git clone https://github.com/kubeflow/manifests.git
 cd manifests
 
-# Checkout v1.10.0
-git checkout v1.10.0
+# Checkout v1.10.2
+git checkout v1.10.2
 
 # Verify
 git branch
-# Should show: * (HEAD detached at v1.10.0)
+# Should show: * (HEAD detached at v1.10.2)
 ```
 
 To get all pods except namespace kube-system as it consists of kubernetes pods
@@ -153,7 +153,7 @@ kubectl get pods -A --field-selector metadata.namespace!=kube-system
 ```
 
 ## Solution 1: Use the Single Command Installation (Recommended)
-The official v1.10.0 documentation recommends using the single-command installation which handles retries:
+The official v1.10.2 documentation recommends using the single-command installation which handles retries:
 bashcd ~/manifests
 
 ## This command automatically retries until successful
@@ -163,7 +163,7 @@ while ! kustomize build example | kubectl apply --server-side --force-conflicts 
     sleep 20; 
 done
 ```
-This is the official recommended method from the v1.10.0 README and handles all dependencies correctly.
+This is the official recommended method from the v1.10.2 README and handles all dependencies correctly.
 
 ## Solution 2 manually install all components
 ## Step 5: Install cert-manager
@@ -449,7 +449,7 @@ cat > check-all.sh <<'EOF'
 #!/bin/bash
 
 echo "=========================================="
-echo "Kubeflow v1.10.0 Installation Verification"
+echo "Kubeflow v1.10.2 Installation Verification"
 echo "=========================================="
 echo ""
 
@@ -495,13 +495,13 @@ kubectl port-forward svc/istio-ingressgateway -n istio-system 8080:80 --address=
 
 ## Complete Installation Script
 
-Save this as `install-kubeflow-v1.10.sh`:
+Save this as `install-kubeflow-v1.10.2.sh`:
 
 ```bash
 #!/bin/bash
 set -e
 
-echo "Starting Kubeflow v1.10.0 installation..."
+echo "Starting Kubeflow v1.10.2 installation..."
 cd ~/manifests
 
 components=(
@@ -562,8 +562,8 @@ echo "Waiting for all pods to be ready (this may take 10-15 minutes)..."
 echo "Run './check-all.sh' to verify installation"
 ```
 ```bash
-  chmod +x install-kubeflow-v1.10.sh
-  ./install-kubeflow-v1.10.sh
+  chmod +x install-kubeflow-v1.10.2.sh
+  ./install-kubeflow-v1.10.2.sh
 ```
 ## Troubleshooting
 
@@ -630,7 +630,7 @@ kubectl apply -f my-notebook.yaml -n kubeflow-user-example-com
 - Release notes: https://github.com/kubeflow/manifests/releases/tag/v1.10.0
 
 
-Excellent! Your Kubeflow v1.10.0 installation is complete and all pods are running! 🎉
+Excellent! Your Kubeflow v1.10.2 installation is complete and all pods are running! 🎉
 
 
 ## Issue 1: Minio - ErrImagePull
