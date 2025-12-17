@@ -660,7 +660,7 @@ kubectl set image deployment/minio -n kubeflow \
 
 # OR try Docker Hub version
 kubectl -n kubeflow set image deployment/minio \
-  minio=minio/minio:RELEASE.2023-10-25T06-33-25Z
+  minio=minio/minio:RELEASE.2024-01-01T16-36-33Z
 ```
 
 Issue 2: ml-pipeline - CrashLoopBackOff
