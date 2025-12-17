@@ -659,8 +659,8 @@ kubectl set image deployment/minio -n kubeflow \
   minio=gcr.io/ml-pipeline/minio:RELEASE.2019-08-14T20-37-41Z-license-compliance
 
 # OR try Docker Hub version
-kubectl set image deployment/minio -n kubeflow \
-  minio=minio/minio:RELEASE.2023-09-30T07-02-29Z
+kubectl -n kubeflow set image deployment/minio \
+  minio=minio/minio:RELEASE.2023-10-25T06-33-25Z
 ```
 
 Issue 2: ml-pipeline - CrashLoopBackOff
@@ -747,8 +747,8 @@ Quick Manual Fix (Fastest)
 ```
 ```bash
 # 1. Fix Minio image
-kubectl set image deployment/minio -n kubeflow \
-  minio=gcr.io/ml-pipeline/minio:RELEASE.2019-08-14T20-37-41Z-license-compliance
+kubectl -n kubeflow set image deployment/minio \
+  minio=minio/minio:RELEASE.2023-10-25T06-33-25Z
 
 # 2. Watch the pods recover
 kubectl get pods -n kubeflow -l app=minio -w
