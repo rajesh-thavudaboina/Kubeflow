@@ -91,6 +91,13 @@ kind get kubeconfig --name kubeflow > /tmp/kubeflow-config
 export KUBECONFIG=/tmp/kubeflow-config
 ```
 
+## Clone Kubeflow Manifests
+```bash
+cd ~
+git clone https://github.com/kubeflow/manifests.git
+cd manifests
+```
+
 You can install all Kubeflow official components (residing under apps) and all common services (residing under common) using the following command:
 
 ```bash
