@@ -85,13 +85,8 @@ kind create cluster --config ~/kind-kubeflow.yaml
 EOF
 ```
 
-### Save Kubeconfig
-```bash
-kind get kubeconfig --name kubeflow > /tmp/kubeflow-config
-export KUBECONFIG=/tmp/kubeflow-config
-```
 
-## Clone Kubeflow Manifests
+### Clone Kubeflow Manifests
 ```bash
 cd ~
 git clone https://github.com/kubeflow/manifests.git
