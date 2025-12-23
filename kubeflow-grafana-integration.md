@@ -1,4 +1,6 @@
-# Add this userdata while launching instance.
+## Install with a Single Command
+
+## Add this userdata while launching instance.
 ```bash
 #!/bin/bash
 set -e
@@ -83,3 +85,39 @@ kind create cluster --config ~/kind-kubeflow.yaml
 EOF
 ```
 
+##Save Kubeconfig
+```bash
+kind get kubeconfig --name kubeflow > /tmp/kubeflow-config
+export KUBECONFIG=/tmp/kubeflow-config
+```
+
+You can install all Kubeflow official components (residing under apps) and all common services (residing under common) using the following command:
+
+```bash
+while ! kustomize build example | kubectl apply --server-side --force-conflicts -f -; do echo "Retrying to apply resources"; sleep 20; done
+```
+
+## Connect to Your Kubeflow Cluster
+After installation, it will take some time for all Pods to become ready. Ensure all Pods are ready before trying to connect; otherwise, you might encounter unexpected errors. To check that all Kubeflow-related Pods are ready, use the following commands:
+
+```bash
+kubectl get pods -n cert-manager
+kubectl get pods -n istio-system
+kubectl get pods -n auth
+kubectl get pods -n oauth2-proxy
+kubectl get pods -n knative-serving
+kubectl get pods -n kubeflow
+kubectl get pods -n kubeflow-user-example-com
+```
+
+### Port-Forward
+The default way of accessing Kubeflow is via port-forwarding. This enables you to get started quickly without imposing any requirements on your environment. Run the following to port-forward Istio's Ingress-Gateway to local port 8080:
+
+```bash
+kubectl port-forward svc/istio-ingressgateway -n istio-system 8080:80 --address 0.0.0.0 &
+```
+
+After running the command, you can access the Kubeflow Central Dashboard by doing the following:
+
+1. Open your browser and visit http://localhost:8080. You should see the Dex login screen.
+2. Log in with the default user's credentials. The default email address is user@example.com, and the default password is 12341234.
