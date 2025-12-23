@@ -85,7 +85,7 @@ kind create cluster --config ~/kind-kubeflow.yaml
 EOF
 ```
 
-## Save Kubeconfig
+### Save Kubeconfig
 ```bash
 kind get kubeconfig --name kubeflow > /tmp/kubeflow-config
 export KUBECONFIG=/tmp/kubeflow-config
@@ -97,7 +97,7 @@ You can install all Kubeflow official components (residing under apps) and all c
 while ! kustomize build example | kubectl apply --server-side --force-conflicts -f -; do echo "Retrying to apply resources"; sleep 20; done
 ```
 
-## Connect to Your Kubeflow Cluster
+### Connect to Your Kubeflow Cluster
 After installation, it will take some time for all Pods to become ready. Ensure all Pods are ready before trying to connect; otherwise, you might encounter unexpected errors. To check that all Kubeflow-related Pods are ready, use the following commands:
 
 ```bash
@@ -119,5 +119,172 @@ kubectl port-forward svc/istio-ingressgateway -n istio-system 8080:80 --address 
 
 After running the command, you can access the Kubeflow Central Dashboard by doing the following:
 
-1. Open your browser and visit http://localhost:8080 or http://<PublicIP>:8080 You should see the Dex login screen.
+1. Open your browser and visit http://localhost:8080 or http://PublicIP:8080 You should see the Dex login screen.
 2. Log in with the default user's credentials. The default email address is user@example.com, and the default password is 12341234.
+
+### Install Prometheus and Grafana with helm
+
+```bash
+kubectl create namespace monitoring
+
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+
+helm repo update
+
+helm install kps prometheus-community/kube-prometheus-stack -n monitoring
+
+```
+```bash
+kubectl get pods -n monitoring | grep -i grafana
+kubectl get svc -n monitoring -A | grep -i grafana
+```
+
+### STEP 1 — Configure Grafana (MOST IMPORTANT STEP)
+
+✅ Use environment variables only
+
+```bash
+kubectl set env deployment/kps-grafana -n monitoring \
+  GF_SERVER_ROOT_URL="%(protocol)s://%(domain)s:%(http_port)s/grafana/" \
+  GF_SERVER_SERVE_FROM_SUB_PATH="true" \
+  GF_AUTH_ANONYMOUS_ENABLED="true" \
+  GF_AUTH_ANONYMOUS_ORG_ROLE="Viewer" \
+  GF_SECURITY_ALLOW_EMBEDDING="true" \
+  GF_SECURITY_COOKIE_SAMESITE="lax"
+```
+
+#### What this does
+-->Fixes blank page
+-->Enables iframe inside Kubeflow
+-->Avoids login popup
+
+### STEP 2 — Restart Grafana
+```bash
+kubectl rollout restart deployment kps-grafana -n monitoring
+kubectl rollout status deployment kps-grafana -n monitoring
+```
+
+### STEP 3 — Create Istio VirtualService for Grafana
+
+```bash
+cat <<EOF > ~/grafana-virtualservice.yaml
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: grafana
+  namespace: monitoring
+spec:
+  gateways:
+  - kubeflow/kubeflow-gateway
+  hosts:
+  - "*"
+  http:
+  - match:
+    - uri:
+        prefix: /grafana
+    route:
+    - destination:
+        host: kps-grafana.monitoring.svc.cluster.local
+        port:
+          number: 80
+      headers:
+        request:
+          set:
+            X-Forwarded-Prefix: /grafana
+            X-Forwarded-Proto: http
+EOF
+
+kubectl apply -f grafana-virtualservice.yaml
+```
+
+### Why this is needed
+Routes Kubeflow /grafana URL
+Preserves sub-path headers
+
+
+### STEP 4 — AuthorizationPolicy (Istio security)
+
+```bash
+cat <<EOF > ~/grafanaAuthorizationPolicy.yaml
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: grafana
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: grafana
+      app.kubernetes.io/instance: kps
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+        - cluster.local/ns/istio-system/sa/istio-ingressgateway-service-account
+EOF
+
+kubectl apply -f grafanaAuthorizationPolicy.yaml
+```
+
+### Why this is needed
+Istio blocks traffic by default
+This explicitly allows Grafana traffic
+
+### STEP 5 — Add Grafana to Kubeflow Sidebar
+```bash
+kubectl get authorizationPolicy -A | grep -i grafana
+kubectl get virtualservice -A | grep -i grafana
+kubectl get configmap -A | grep central
+```
+
+```bash
+kubectl edit configmap centraldashboard-config -n kubeflow
+```
+#### Add the below configuration in the centraldashboard-config file
+
+```bash
+            {
+                "icon": "av:equalizer",
+                "link": "/grafana/",
+                "text": "Grafana",
+                "type": "item"
+            },
+```
+#### Restart centraldashboard deployment
+```bash
+kubectl rollout restart deployment centraldashboard -n kubeflow
+```
+
+### STEP 6 — Access Kubeflow
+
+```bash
+kubectl port-forward -n istio-system svc/istio-ingressgateway 8080:80 --address 0.0.0.0 &
+```
+
+Open:
+
+http://localhost:8080 or http://publicIP:8080
+
+
+Click Grafana → ✅ Grafana UI loads
+
+### 🔍 Sanity Checks (Optional but useful)
+
+Test Grafana internally
+
+```bash
+kubectl run curl-test --rm -it --restart=Never \
+  --image=curlimages/curl \
+  -- curl http://kps-grafana.monitoring.svc.cluster.local/api/health
+```
+
+#### Expected:
+```bash
+{"database":"ok","message":"ok"}
+```
+#### Check Grafana ENV vars
+
+```bash
+kubectl describe deployment kps-grafana -n monitoring | grep GF_SERVER
+```
