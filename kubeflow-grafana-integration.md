@@ -137,6 +137,10 @@ helm install kps prometheus-community/kube-prometheus-stack -n monitoring
 
 ```
 ```bash
+kubectl get pods -n monitoring
+```
+
+```bash
 kubectl get pods -n monitoring | grep -i grafana
 kubectl get svc -n monitoring -A | grep -i grafana
 ```
