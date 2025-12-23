@@ -81,7 +81,5 @@ YAML
 kind create cluster --config ~/kind-kubeflow.yaml
 
 EOF
-
-echo "EC2 bootstrap completed successfully"
 ```
 
