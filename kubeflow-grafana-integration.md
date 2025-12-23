@@ -85,7 +85,7 @@ kind create cluster --config ~/kind-kubeflow.yaml
 EOF
 ```
 
-##Save Kubeconfig
+## Save Kubeconfig
 ```bash
 kind get kubeconfig --name kubeflow > /tmp/kubeflow-config
 export KUBECONFIG=/tmp/kubeflow-config
@@ -119,5 +119,5 @@ kubectl port-forward svc/istio-ingressgateway -n istio-system 8080:80 --address 
 
 After running the command, you can access the Kubeflow Central Dashboard by doing the following:
 
-1. Open your browser and visit http://localhost:8080. You should see the Dex login screen.
+1. Open your browser and visit http://localhost:8080 or http://<PublicIP>:8080 You should see the Dex login screen.
 2. Log in with the default user's credentials. The default email address is user@example.com, and the default password is 12341234.
