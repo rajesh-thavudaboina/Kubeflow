@@ -14,3 +14,7 @@ kustomize version
 echo "############################"
 kind get clusters
 echo "############################"
+kubectl get nodes
+echo "############################"
+kubectl get pods -A
+echo "############################"
