@@ -180,6 +180,14 @@ kubectl get pods -n monitoring | grep -i grafana
 kubectl get svc -n monitoring -A | grep -i grafana
 ```
 
+### Grafana login
+User: admin
+
+Password: from secret:
+
+```bash
+kubectl get secret kps-grafana -n monitoring -o jsonpath='{.data.admin-password}' | base64 -d; echo
+```
 ### STEP 1 — Configure Grafana (MOST IMPORTANT STEP)
 
 ✅ Use environment variables only
