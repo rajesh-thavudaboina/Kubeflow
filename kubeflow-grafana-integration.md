@@ -269,6 +269,7 @@ kubectl edit configmap centraldashboard-config -n kubeflow
 #### Restart centraldashboard deployment
 ```bash
 kubectl rollout restart deployment centraldashboard -n kubeflow
+kubectl rollout status deployment centraldashboard -n kubeflow
 ```
 
 ### STEP 6 — Access Kubeflow
