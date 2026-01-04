@@ -8,9 +8,9 @@ kind --version
 echo "############################"
 kubectl version --client
 echo "############################"
-helm version --short
+echo "helm version $(helm version --short)"
 echo "############################"
-kustomize version
+echo "kustomize version $(kustomize version)"
 echo "############################"
 kind get clusters
 echo "############################"
