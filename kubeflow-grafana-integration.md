@@ -133,6 +133,32 @@ After running the command, you can access the Kubeflow Central Dashboard by doin
 1. Open your browser and visit http://localhost:8080 or http://PublicIP:8080 You should see the Dex login screen.
 2. Log in with the default user's credentials. The default email address is user@example.com, and the default password is 12341234.
 
+
+### However, you're encountering a **CSRF token error** when trying to create a notebook. This is a common issue related to cookie/session handling. Let me help you fix this:
+
+## Quick Fix for CSRF Error
+
+🥈(Quick Dev Fix): Disable CSRF Check (NOT for prod)
+
+If this is only a demo / learning setup, you can disable the check.
+
+Patch jupyter-web-app deployment
+```bash
+kubectl edit deployment jupyter-web-app-deployment -n kubeflow
+```
+
+Add env var:
+```bash
+env:
+- name: APP_SECURE_COOKIES
+  value: "false"
+```
+
+Restart:
+```bash
+kubectl rollout restart deployment jupyter-web-app-deployment -n kubeflow
+kubectl rollout status deployment jupyter-web-app-deployment -n kubeflow
+
 ### Install Prometheus and Grafana with helm
 
 ```bash

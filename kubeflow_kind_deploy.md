@@ -818,6 +818,7 @@ env:
 Restart:
 ```bash
 kubectl rollout restart deployment jupyter-web-app-deployment -n kubeflow
+kubectl rollout status deployment jupyter-web-app-deployment -n kubeflow
 ```
 
 🔍 Why CSRF Happens Specifically Here
